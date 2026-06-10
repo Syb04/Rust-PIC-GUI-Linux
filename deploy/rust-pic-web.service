@@ -1,0 +1,33 @@
+# Example systemd unit for a Linux deployment under /opt/rust-pic.
+# Install example:
+#   sudo useradd --system --home /opt/rust-pic --shell /usr/sbin/nologin rust-pic
+#   sudo install -d -o rust-pic -g rust-pic /opt/rust-pic/workspaces
+#   sudo cp deploy/rust-pic-web.service /etc/systemd/system/rust-pic-web.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now rust-pic-web
+
+[Unit]
+Description=Rust-PIC Axum Web Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=rust-pic
+Group=rust-pic
+WorkingDirectory=/opt/rust-pic
+ExecStart=/opt/rust-pic/target/release/server
+Environment=BIND_ADDR=0.0.0.0:8090
+Environment=RUST_PIC_BIN=/opt/rust-pic/target/release/rust-pic
+Environment=WEB_DIST=/opt/rust-pic/web/dist
+Environment=WORKSPACES_DIR=/opt/rust-pic/workspaces
+Environment=LXCAT_DIR=/opt/rust-pic/xsec
+Environment=MAX_CONCURRENT=4
+Environment=MAX_JOBS=50
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

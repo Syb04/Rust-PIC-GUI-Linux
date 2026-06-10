@@ -1,0 +1,7 @@
+[workspace]
+members = ["crates/rust-pic", "crates/server"]
+resolver = "2"
+
+[profile.release]
+opt-level = 2
+lto = true

@@ -1,0 +1,824 @@
+/* ============================================================
+   Rust-PIC·1D — "Plasma Instrument" theme
+   実験計測器 / オシロスコープの美学
+   ============================================================ */
+
+:root {
+  /* 背景レイヤー */
+  --bg: #060911;
+  --bg-deep: #04060c;
+  --panel: rgba(16, 22, 33, 0.72);
+  --panel-solid: #0e1420;
+  --elev: rgba(24, 33, 48, 0.7);
+  --field-bg: rgba(6, 10, 18, 0.65);
+
+  /* 罫線・境界 */
+  --border: rgba(86, 104, 135, 0.22);
+  --border-strong: rgba(86, 104, 135, 0.4);
+  --grid-line: rgba(86, 104, 135, 0.07);
+
+  /* テキスト */
+  --text: #d4dcec;
+  --text-dim: #7f8da6;
+  --text-faint: #54627b;
+
+  /* プラズマ・アクセント */
+  --electron: #36e0d6; /* シアン = 電子 */
+  --ion: #ff9d4d; /* アンバー = イオン */
+  --plasma: #a78bfa; /* バイオレット = 放電 */
+  --electron-glow: rgba(54, 224, 214, 0.5);
+  --plasma-glow: rgba(167, 139, 250, 0.45);
+
+  /* 状態 */
+  --ok: #41d49a;
+  --warn: #ffd166;
+  --danger: #ff5d73;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+
+  --font-display: "Chakra Petch", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-body: "IBM Plex Sans", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg-deep);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* --- 大気感のある背景: グリッド + プラズマグロー + グレイン --- */
+.app {
+  position: relative;
+  min-height: 100%;
+  isolation: isolate;
+}
+.app::before {
+  /* オシロスコープ・グリッド */
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background:
+    radial-gradient(ellipse 90% 60% at 18% -8%, rgba(54, 224, 214, 0.12), transparent 60%),
+    radial-gradient(ellipse 70% 55% at 100% 0%, rgba(167, 139, 250, 0.13), transparent 55%),
+    radial-gradient(ellipse 60% 50% at 60% 110%, rgba(255, 157, 77, 0.07), transparent 60%),
+    var(--bg);
+}
+.app::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 120% 100% at 50% 0%, #000 55%, transparent 100%);
+}
+
+/* ============================================================
+   ヘッダー
+   ============================================================ */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 18px 32px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(8, 12, 20, 0.85), rgba(8, 12, 20, 0.3));
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  user-select: none;
+}
+.brand .mark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.brand .mark .accent {
+  color: var(--electron);
+  text-shadow: 0 0 16px var(--electron-glow);
+}
+.brand .sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.tabs button {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  position: relative;
+}
+.tabs button:hover {
+  color: var(--text);
+  background: var(--elev);
+}
+.tabs button.active {
+  color: var(--electron);
+  background: rgba(54, 224, 214, 0.08);
+  border-color: rgba(54, 224, 214, 0.35);
+  box-shadow: 0 0 0 1px rgba(54, 224, 214, 0.1), 0 4px 18px -8px var(--electron-glow);
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* ============================================================
+   ボタン
+   ============================================================ */
+.btn {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--elev);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  white-space: nowrap;
+}
+.btn:hover:not(:disabled) {
+  border-color: var(--text-dim);
+  transform: translateY(-1px);
+}
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.btn.primary {
+  background: linear-gradient(135deg, rgba(54, 224, 214, 0.9), rgba(54, 224, 214, 0.65));
+  color: #042; /* dark text on cyan */
+  color: #03261f;
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 6px 24px -10px var(--electron-glow), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.btn.primary:hover:not(:disabled) {
+  box-shadow: 0 10px 30px -10px var(--electron-glow), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.btn.danger {
+  border-color: rgba(255, 93, 115, 0.4);
+  color: var(--danger);
+}
+.btn.danger:hover:not(:disabled) {
+  background: rgba(255, 93, 115, 0.1);
+}
+.btn.ghost {
+  background: transparent;
+  border-color: var(--border);
+  color: var(--text-dim);
+}
+.btn.ghost:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+/* ============================================================
+   コンテンツ・レイアウト
+   ============================================================ */
+.app-content {
+  padding: 28px 32px 64px;
+  max-width: 1500px;
+  margin: 0 auto;
+}
+
+/* 計器パネル風カード */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+.panel::before {
+  /* 上端のアクセントライン */
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--electron), transparent);
+  opacity: 0.5;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.panel-head h2,
+.panel-head h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
+.panel-head .tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+.panel-body {
+  padding: 18px;
+}
+
+/* ============================================================
+   パラメータフォーム
+   ============================================================ */
+.param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 18px;
+}
+.field-group {
+  /* カードはそのまま panel を使う */
+}
+.field-group .group-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--electron);
+  text-transform: uppercase;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.field-group .group-title::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--electron);
+  box-shadow: 0 0 8px var(--electron-glow);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 14px;
+}
+.field-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+.field-label .unit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.field-help {
+  font-size: 11px;
+  color: var(--text-faint);
+  line-height: 1.45;
+}
+
+.field input[type="text"],
+.field input[type="number"],
+.field select {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 9px 11px;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--electron);
+  box-shadow: 0 0 0 3px rgba(54, 224, 214, 0.12);
+  background: rgba(6, 10, 18, 0.9);
+}
+.field select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--text-dim) 50%),
+    linear-gradient(135deg, var(--text-dim) 50%, transparent 50%);
+  background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+/* トグルスイッチ */
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.toggle input {
+  display: none;
+}
+.toggle .track {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--field-bg);
+  border: 1px solid var(--border-strong);
+  position: relative;
+  transition: all 0.18s ease;
+}
+.toggle .track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-dim);
+  transition: all 0.18s ease;
+}
+.toggle input:checked + .track {
+  background: rgba(54, 224, 214, 0.2);
+  border-color: var(--electron);
+}
+.toggle input:checked + .track::after {
+  transform: translateX(18px);
+  background: var(--electron);
+  box-shadow: 0 0 10px var(--electron-glow);
+}
+.toggle .toggle-text {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* 波形アップロード */
+.waveform-drop {
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: 18px;
+  text-align: center;
+  background: var(--field-bg);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.waveform-drop:hover {
+  border-color: var(--electron);
+  color: var(--text);
+}
+.waveform-info {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--electron);
+}
+
+/* ============================================================
+   実行パネル / ログコンソール
+   ============================================================ */
+.run-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 920px) {
+  .run-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.run-summary dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  font-size: 13px;
+}
+.run-summary dt {
+  color: var(--text-faint);
+}
+.run-summary dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  color: var(--text);
+  text-align: right;
+}
+
+.console {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  height: 62vh;
+  overflow-y: auto;
+  padding: 16px 18px;
+  position: relative;
+}
+.console-line {
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-dim);
+}
+.console-line.sys {
+  color: var(--electron);
+}
+.console-line.err {
+  color: var(--danger);
+}
+.console-empty {
+  color: var(--text-faint);
+  font-style: italic;
+}
+.console::-webkit-scrollbar,
+.results-list::-webkit-scrollbar {
+  width: 10px;
+}
+.console::-webkit-scrollbar-thumb,
+.results-list::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+}
+
+/* ============================================================
+   ステータスバッジ
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+}
+.badge .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge.running {
+  color: var(--electron);
+  border-color: rgba(54, 224, 214, 0.4);
+  background: rgba(54, 224, 214, 0.07);
+}
+.badge.running .dot {
+  animation: pulse 1.2s ease-in-out infinite;
+}
+.badge.queued {
+  color: var(--warn);
+  border-color: rgba(255, 209, 102, 0.35);
+}
+.badge.done {
+  color: var(--ok);
+  border-color: rgba(65, 212, 154, 0.4);
+  background: rgba(65, 212, 154, 0.07);
+}
+.badge.failed {
+  color: var(--danger);
+  border-color: rgba(255, 93, 115, 0.4);
+  background: rgba(255, 93, 115, 0.07);
+}
+.badge.stopped {
+  color: var(--text-dim);
+}
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 var(--electron-glow);
+  }
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 0 5px rgba(54, 224, 214, 0);
+  }
+}
+
+/* ============================================================
+   可視化
+   ============================================================ */
+.viz-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 18px;
+  align-items: start;
+}
+@media (max-width: 980px) {
+  .viz-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.results-nav {
+  position: sticky;
+  top: 96px;
+}
+.results-list {
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 8px;
+}
+.diag-cat {
+  margin-bottom: 14px;
+}
+.diag-cat .cat-title {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 4px 8px;
+}
+.diag-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: all 0.14s ease;
+}
+.diag-item:hover {
+  color: var(--text);
+  background: var(--elev);
+}
+.diag-item.active {
+  color: var(--electron);
+  background: rgba(54, 224, 214, 0.08);
+  border-color: rgba(54, 224, 214, 0.3);
+}
+.diag-item:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.plot-host {
+  width: 100%;
+  height: 64vh;
+  min-height: 420px;
+}
+.report-text {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  color: var(--text);
+  max-height: 64vh;
+  overflow-y: auto;
+}
+
+.plot-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.plot-toolbar .ctrl {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.plot-toolbar select {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--field-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+}
+
+/* 空状態 */
+.empty-state {
+  text-align: center;
+  padding: 64px 24px;
+  color: var(--text-faint);
+}
+.empty-state .glyph {
+  font-size: 40px;
+  opacity: 0.5;
+  margin-bottom: 12px;
+}
+.empty-state .msg {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.notice {
+  font-size: 13px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  margin-bottom: 16px;
+}
+.notice.error {
+  color: var(--danger);
+  border-color: rgba(255, 93, 115, 0.4);
+  background: rgba(255, 93, 115, 0.08);
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* ============================================================
+   ジョブ一覧
+   ============================================================ */
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+.job-card {
+  background: var(--elev);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  transition: all 0.16s ease;
+}
+.job-card:hover {
+  border-color: var(--border-strong);
+}
+.job-card.selected {
+  border-color: var(--electron);
+  box-shadow: 0 0 0 1px rgba(54, 224, 214, 0.25), 0 6px 22px -12px var(--electron-glow);
+  background: rgba(54, 224, 214, 0.05);
+}
+.job-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.job-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  min-width: 0;
+}
+.job-check input {
+  accent-color: var(--electron);
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+.job-label {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.job-card-head .badge {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+.job-summary-line {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.job-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-faint);
+}
+.job-error {
+  font-size: 11.5px;
+  color: var(--danger);
+  margin-top: 6px;
+  word-break: break-word;
+}
+.job-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+.job-actions .btn {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+/* ============================================================
+   比較ビュー
+   ============================================================ */
+.compare-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  background: var(--field-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+.legend-item .swatch {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+}
+.heatmap-cell {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  background: rgba(8, 12, 20, 0.3);
+}
+.heatmap-cell-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--electron);
+  margin-bottom: 6px;
+  text-align: center;
+}
+.heatmap-cell .plot-host {
+  height: 320px;
+  min-height: 320px;
+}

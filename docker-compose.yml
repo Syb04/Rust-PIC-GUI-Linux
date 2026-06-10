@@ -1,0 +1,19 @@
+services:
+  rust-pic-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rust-pic-web:latest
+    ports:
+      - "8090:8090"
+    environment:
+      # 同時実行ジョブ数の上限（サーバー CPU を保護）
+      MAX_CONCURRENT: "4"
+      # registry に保持するジョブ数の上限（超過分は古い完了ジョブから削除）
+      MAX_JOBS: "50"
+    volumes:
+      # ジョブの作業領域・計算結果を永続化する
+      - ./workspaces:/app/workspaces
+      # LXCat 断面積ファイルを配置するディレクトリ
+      - ./xsec:/data/lxcat
+    restart: unless-stopped

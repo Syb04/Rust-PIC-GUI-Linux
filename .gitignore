@@ -1,0 +1,17 @@
+# Rust
+/target
+crates/*/target
+
+# Node / フロント
+**/node_modules
+/web/dist
+
+# 実行時生成物
+workspaces/
+/result
+picdata.bin
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

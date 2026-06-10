@@ -1,0 +1,11 @@
+target
+crates/*/target
+**/node_modules
+web/dist
+workspaces
+result
+picdata.bin
+.git
+gui
+*.log
+.DS_Store

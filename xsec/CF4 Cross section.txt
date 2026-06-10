@@ -1,0 +1,432 @@
+LXCat, www.lxcat.net
+Generated on 25 May 2026. All rights reserved.
+
+RECOMMENDED REFERENCE FORMAT
+- Bordage database, www.lxcat.net, retrieved on May 25, 2026.
+
+CROSS SECTION DATA FORMAT
+In downloaded files, each collision process is defined by a block consisting of
+1st line
+Keyword in capitals indicating the type of the collision. Possible collision types are elastic, effective, excitation,
+ionization, or attachment (capital letters required, key words are case sensitive), where "elastic" is used to denote
+the elastic momentum transfer cross section and where "effective" denotes the total momentum transfer cross section (sum
+of elastic momentum transfer and total inelastic cross sections).  The latter is useful for solving the Boltzmann
+equation in the 2-term approximation.
+2nd line
+Name of the target particle species. This name is a character string, freely chosen by the user, e.g. "Ar". Optionally
+for excitation processes, the name of the corresponding excited state can be specified on the same line, separated from
+the first name either by arrow "->" (dash + greater than) or by double-head arrow "<->" (less than + dash +
+greater than), e.g. "Ar -> Ar*" and "Ar <-> Ar*", respectively. In the later case BOLSIG+ will automatically
+define the inverse superelastic process, constructing the superelastic cross-section by detailed balancing, and
+considering the indicated excited state as the target. In this case, the ratio of statistical weights must be input in
+the 3rd line (see below).
+3rd line
+For elastic and effective collisions, the ratio of the electron mass to the target particle mass. For excitation or
+ionization collisions, the electron energy loss (nominally the threshold energy) in eV. For attachment, the 3rd line is
+missing. In case of an excitation process where an excited state has been indicated on the 2nd line using double-head
+arrow "<->", the 3rd line must specify also ratio of the statistical weights of the final state to the initial state
+as the second parameter in 3rd line; this is needed by BOLSIG+ to calculate the de-excitation cross-section. The
+statistical weight ratio, if given, will also be used by the automatic superelastics option in BOLSIG+. If this ratio is
+not provided then BOLSIG+ will assume it unity.
+from 4th line (optionally)
+User comments and reference information, maximum 100 lines. The only constraint on format is that these comment lines
+must not start with a number.
+Finally
+Table of the cross section as a function of energy. The table starts and ends by a line of dashes "------" (at least 5),
+and has otherwise two numbers per line: the energy in eV and the cross section in m2.
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+DATABASE:         Bordage database
+PERMLINK:         www.lxcat.net/Bordage
+DESCRIPTION:      All the cross sections were derived by using a multiterm solution of the Boltzmann equation in the
+                  approximation of the hydrodynamic regime. (see for exemple Ségur P., Yousfi M., Kadri M. and  Bordage
+                  M.C., "A survey of the numerical methods currently in use to describe the motion of an electron swarm
+                  in a weakly ionised gas", Transport Theory and Statistical. Physics, Vol-15, Issue-6&7, pp-705-757, 
+                  1986. And Ségur P. and Bordage M.C., "Recent advances in the solution of the Boltzmann equation for
+                  the motion of electrons in a weakly ionized gas", Invited paper, XIX ICPIG, Belgrade, 86-107, 1989.)
+CONTACT:          Marie-Claude Bordage, Laplace Laboratory Toulouse, France. Email:
+                  marie-claude.bordage@@laplace.univ-tlse.fr
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+************************************************************************************************************************
+
+COMMENT: 1) updated 11 May, 2015. See comments on indirect vib. excitation process. 
+         Bordage M.C., Segur P. and Chouki A., "Determination of a set of electron impact cross sections in
+         tetrafluoromethane consistent with experimental determination of swarm parameters", J. Appl. Phys., vol-80,
+         issue-3, 1325-36 1996. And 2) Bordage M.C., Segur P., Christophorou L.G. and Olthoff J.K., "Boltzmann analysis of
+         electron swarm parameters in CF4 using independently assessed electron-collision cross sections", Journal of
+         Applied Physics, vol-86, issue-7, pp. 3558-66, 1999. In the second paper, the recommended values for indirect
+         vibrational excitation cross section, total ionisation cross section and cross section for the dissociation of neutral
+         fragments were given by Christophorou et al. (J. Phys. Chem. Ref. Data 1999 28, 967). Elastic momentum transfer,
+         attachment and direct vibration cross sections came from Christophorou et al. (J. Phys. Chem. Ref. Data 1996 25, 1341).
+         Superelastic collisions were used in swarm calculations. Calculated swarm coefficients are compared with experimental
+         data for drift velocity in pure CF4, and Ar-CF4 mixtures (from 0.1% to 30% of CF4), transverse characteristic energy in
+         pure CF4 and longitudinal coefficient in Ar-CF4 mixtures (0.5, 5 and 100% of CF4), and ionisation and attachment
+         coefficient (pure CF4).
+
+********************************************************** CF4 **********************************************************
+
+ATTACHMENT
+CF4 -> CF2^-+F2
+SPECIES: e / CF4
+PROCESS: E + CF4 -> CF2-+F2, Attachment
+PARAM.:  E = 0 eV, complete set
+COMMENT: CF2^- + F2 (att). Threshold 4.3eV.
+UPDATED: 2010-06-23 12:23:52
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 4.300000e+0	0.000000e+0
+ 4.310000e+0	4.000000e-25
+ 4.600000e+0	1.200000e-24
+ 4.790000e+0	4.800000e-24
+ 5.000000e+0	1.080000e-23
+ 5.180000e+0	2.020000e-23
+ 5.380000e+0	3.170000e-23
+ 5.560000e+0	4.860000e-23
+ 5.770000e+0	6.810000e-23
+ 5.940000e+0	8.810000e-23
+ 6.150000e+0	1.070000e-22
+ 6.340000e+0	1.260000e-22
+ 6.520000e+0	1.440000e-22
+ 6.730000e+0	1.570000e-22
+ 6.910000e+0	1.610000e-22
+ 7.140000e+0	1.580000e-22
+ 7.320000e+0	1.460000e-22
+ 7.520000e+0	1.310000e-22
+ 7.720000e+0	1.140000e-22
+ 7.930000e+0	9.770000e-23
+ 8.100000e+0	8.020000e-23
+ 8.330000e+0	6.560000e-23
+ 8.510000e+0	5.060000e-23
+ 8.750000e+0	3.890000e-23
+ 8.930000e+0	2.840000e-23
+ 9.130000e+0	2.130000e-23
+ 9.350000e+0	1.460000e-23
+ 9.520000e+0	9.900000e-24
+ 9.760000e+0	6.900000e-24
+ 9.960000e+0	4.300000e-24
+ 1.020000e+1	2.200000e-24
+ 1.040000e+1	9.000000e-25
+ 1.050000e+1	0.000000e+0
+-----------------------------
+
+ELASTIC
+CF4
+ 6.200000e-6
+SPECIES: e / CF4
+PROCESS: E + CF4 -> E + CF4, Elastic
+PARAM.:  m/M = 0.0000062, complete set
+UPDATED: 2011-02-08 11:53:42
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 0.000000e+0	2.000000e-19
+ 1.000000e-9	2.000000e-19
+ 1.000000e-5	2.000000e-19
+ 6.734880e-5	1.750000e-19
+ 3.229980e-4	1.500000e-19
+ 1.000000e-3	1.303000e-19
+ 1.500000e-3	1.230000e-19
+ 2.000000e-3	1.176000e-19
+ 2.500000e-3	1.130000e-19
+ 3.000000e-3	1.092000e-19
+ 3.500000e-3	1.055000e-19
+ 4.000000e-3	1.022000e-19
+ 4.500000e-3	9.930000e-20
+ 5.000000e-3	9.650000e-20
+ 6.000000e-3	9.140000e-20
+ 7.000000e-3	8.670000e-20
+ 8.000000e-3	8.250000e-20
+ 9.000000e-3	7.850000e-20
+ 1.000000e-2	7.520000e-20
+ 1.500000e-2	6.150000e-20
+ 2.000000e-2	5.060000e-20
+ 2.500000e-2	4.160000e-20
+ 3.000000e-2	3.440000e-20
+ 3.500000e-2	2.820000e-20
+ 4.000000e-2	2.290000e-20
+ 4.500000e-2	1.900000e-20
+ 5.000000e-2	1.540000e-20
+ 6.000000e-2	1.100000e-20
+ 7.000000e-2	7.800000e-21
+ 8.000000e-2	5.500000e-21
+ 9.000000e-2	3.900000e-21
+ 1.000000e-1	2.600000e-21
+ 1.250000e-1	1.400000e-21
+ 1.500000e-1	1.300000e-21
+ 1.750000e-1	1.800000e-21
+ 2.000000e-1	2.700000e-21
+ 2.500000e-1	4.800000e-21
+ 3.000000e-1	7.600000e-21
+ 3.500000e-1	1.050000e-20
+ 4.000000e-1	1.390000e-20
+ 4.500000e-1	1.760000e-20
+ 5.000000e-1	2.130000e-20
+ 6.000000e-1	2.820000e-20
+ 7.000000e-1	3.450000e-20
+ 8.000000e-1	4.010000e-20
+ 9.000000e-1	4.480000e-20
+ 1.000000e+0	4.920000e-20
+ 1.500000e+0	6.260000e-20
+ 2.000000e+0	6.920000e-20
+ 2.500000e+0	7.300000e-20
+ 3.000000e+0	7.530000e-20
+ 3.500000e+0	7.720000e-20
+ 4.000000e+0	7.890000e-20
+ 4.500000e+0	8.040000e-20
+ 5.000000e+0	8.210000e-20
+ 6.000000e+0	8.550000e-20
+ 7.000000e+0	8.680000e-20
+ 8.000000e+0	8.960000e-20
+ 9.000000e+0	1.006000e-19
+ 1.000000e+1	1.123000e-19
+ 1.500000e+1	1.341000e-19
+ 2.000000e+1	1.410000e-19
+ 2.500000e+1	1.250000e-19
+ 3.000000e+1	1.038000e-19
+ 3.500000e+1	8.800000e-20
+ 4.000000e+1	7.800000e-20
+ 4.500000e+1	7.240000e-20
+ 5.000000e+1	6.660000e-20
+ 6.000000e+1	5.800000e-20
+ 7.000000e+1	5.280000e-20
+ 8.000000e+1	4.770000e-20
+ 9.000000e+1	4.370000e-20
+ 1.000000e+2	4.030000e-20
+ 1.500000e+2	2.740000e-20
+ 2.000000e+2	1.920000e-20
+ 2.500000e+2	1.460000e-20
+ 3.000000e+2	1.170000e-20
+ 3.500000e+2	9.700000e-21
+ 4.000000e+2	8.200000e-21
+ 4.500000e+2	7.100000e-21
+ 5.000000e+2	6.200000e-21
+ 6.000000e+2	5.000000e-21
+ 7.000000e+2	4.100000e-21
+-----------------------------
+
+EXCITATION
+CF4 -> CF4(V1)(0.078eV)
+ 7.800000e-2
+SPECIES: e / CF4
+PROCESS: E + CF4 -> E + CF4(V1)(0.078eV), Excitation
+PARAM.:  E = 0.078 eV, complete set
+COMMENT: vibrational excitation 1 (vib directe).
+UPDATED: 2010-06-23 12:22:07
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 7.800000e-2	0.000000e+0
+ 7.849000e-2	5.000000e-22
+ 7.904000e-2	1.000000e-21
+ 8.000000e-2	1.531240e-21
+ 8.736000e-2	3.000000e-21
+ 9.000000e-2	3.267760e-21
+ 1.000000e-1	3.909200e-21
+ 1.400000e-1	4.404170e-21
+ 1.600000e-1	4.317430e-21
+ 2.000000e-1	4.025630e-21
+ 2.500000e-1	3.645820e-21
+ 3.000000e-1	3.314350e-21
+ 4.000000e-1	2.799840e-21
+ 5.000000e-1	2.428600e-21
+ 6.000000e-1	2.149900e-21
+ 7.000000e-1	1.932970e-21
+ 8.000000e-1	1.759090e-21
+ 9.000000e-1	1.616400e-21
+ 1.000000e+0	1.497000e-21
+ 1.400000e+0	1.164830e-21
+ 1.600000e+0	1.052150e-21
+ 2.000000e+0	8.855480e-22
+ 2.500000e+0	7.433400e-22
+ 3.000000e+0	6.431350e-22
+ 4.000000e+0	5.102960e-22
+ 5.000000e+0	4.255310e-22
+ 6.000000e+0	3.663660e-22
+ 7.000000e+0	3.225390e-22
+ 8.000000e+0	2.886670e-22
+ 9.000000e+0	2.616430e-22
+ 1.000000e+1	2.395430e-22
+ 1.400000e+1	1.803650e-22
+ 1.600000e+1	1.610330e-22
+ 2.000000e+1	1.331220e-22
+ 2.500000e+1	1.099320e-22
+ 3.000000e+1	9.394790e-23
+ 4.000000e+1	7.322670e-23
+ 5.000000e+1	6.029720e-23
+ 6.000000e+1	5.141570e-23
+ 7.000000e+1	4.491700e-23
+ 8.000000e+1	3.994390e-23
+ 9.000000e+1	3.600860e-23
+ 1.000000e+2	0.000000e+0
+-----------------------------
+
+EXCITATION
+CF4 -> CF4(V2)(0.159eV)
+ 1.590000e-1
+SPECIES: e / CF4
+PROCESS: E + CF4 -> E + CF4(V2)(0.159eV), Excitation
+PARAM.:  E = 0.159 eV, complete set
+COMMENT: vibrational excitation 2 (vib directe).
+UPDATED: 2010-06-23 12:22:31
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 1.590000e-1	0.000000e+0
+ 1.600000e-1	1.426470e-20
+ 1.621600e-1	2.000000e-20
+ 1.710600e-1	4.000000e-20
+ 1.843600e-1	6.000000e-20
+ 2.000000e-1	7.032100e-20
+ 2.500000e-1	8.047750e-20
+ 3.000000e-1	8.062260e-20
+ 4.000000e-1	7.459960e-20
+ 5.000000e-1	6.769610e-20
+ 6.000000e-1	6.161160e-20
+ 7.000000e-1	5.646240e-20
+ 8.000000e-1	5.211430e-20
+ 9.000000e-1	4.841530e-20
+ 1.000000e+0	4.523730e-20
+ 1.400000e+0	3.603510e-20
+ 1.600000e+0	3.280240e-20
+ 2.000000e+0	2.792590e-20
+ 2.500000e+0	2.367480e-20
+ 3.000000e+0	2.063110e-20
+ 4.000000e+0	1.653400e-20
+ 5.000000e+0	1.388190e-20
+ 6.000000e+0	1.201240e-20
+ 7.000000e+0	1.061760e-20
+ 8.000000e+0	9.533400e-21
+ 9.000000e+0	8.664440e-21
+ 1.000000e+1	7.951060e-21
+ 1.400000e+1	6.027890e-21
+ 1.600000e+1	5.395270e-21
+ 2.000000e+1	4.477650e-21
+ 2.500000e+1	3.711150e-21
+ 3.000000e+1	3.180430e-21
+ 4.000000e+1	2.489160e-21
+ 5.000000e+1	2.055730e-21
+ 6.000000e+1	1.756940e-21
+ 7.000000e+1	1.537710e-21
+ 8.000000e+1	1.369570e-21
+ 9.000000e+1	1.236260e-21
+ 1.000000e+2	1.127830e-21
+-----------------------------
+
+EXCITATION
+CF4 -> CF4(V2)(0.4 eV)
+ 4.000000e-1
+SPECIES: e / CF4
+PROCESS: E + CF4 -> E + CF4(V2)(0.4 eV), Excitation
+PARAM.:  E = 0.4 eV, complete set
+COMMENT: vibrational excitation 2 (vib indirect). The energy loss associated with this process was
+COMMENT: corrected on 11 May 2015. (Thanks to Dr Sun Hao from Xi'an for pointing out the
+COMMENT: error.).
+UPDATED: 2015-05-11 09:14:32
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 4.000000e-1	0.000000e+0
+ 4.000000e+0	0.000000e+0
+ 5.000000e+0	4.500000e-21
+ 6.000000e+0	1.650000e-20
+ 7.000000e+0	4.930000e-20
+ 8.000000e+0	7.000000e-20
+ 9.000000e+0	6.740000e-20
+ 1.000000e+1	4.950000e-20
+ 1.500000e+1	0.000000e+0
+-----------------------------
+
+EXCITATION
+CF4 -> CF4*(10.00eV)
+ 1.000000e+1
+SPECIES: e / CF4
+PROCESS: E + CF4 -> E + CF4*(10.00eV), Excitation
+PARAM.:  E = 10 eV, complete set
+COMMENT: dissociative excitation;Diss neutre.
+UPDATED: 2010-06-23 12:23:15
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 1.000000e+1	0.000000e+0
+ 1.200000e+1	2.000000e-22
+ 1.400000e+1	6.000000e-22
+ 1.600000e+1	7.000000e-22
+ 1.800000e+1	8.000000e-22
+ 2.000000e+1	1.200000e-21
+ 2.200000e+1	2.200000e-21
+ 2.400000e+1	3.200000e-21
+ 2.600000e+1	4.650000e-21
+ 2.800000e+1	5.600000e-21
+ 3.000000e+1	6.600000e-21
+ 3.200000e+1	7.500000e-21
+ 3.400000e+1	8.200000e-21
+ 3.600000e+1	8.500000e-21
+ 3.800000e+1	9.200000e-21
+ 4.000000e+1	9.700000e-21
+ 5.000000e+1	1.090000e-20
+ 6.000000e+1	1.120000e-20
+ 7.000000e+1	1.110000e-20
+ 8.000000e+1	1.149000e-20
+ 9.000000e+1	1.132000e-20
+ 1.000000e+2	1.124000e-20
+ 1.100000e+2	1.098000e-20
+ 1.200000e+2	1.058000e-20
+ 1.300000e+2	1.041000e-20
+ 1.400000e+2	1.040000e-20
+ 1.500000e+2	1.018000e-20
+ 1.600000e+2	1.029000e-20
+ 1.700000e+2	1.008000e-20
+ 1.800000e+2	1.042000e-20
+ 1.900000e+2	1.029000e-20
+ 2.000000e+2	1.013000e-20
+ 3.000000e+2	9.440000e-21
+ 4.000000e+2	8.380000e-21
+ 5.000000e+2	7.800000e-21
+-----------------------------
+
+IONIZATION
+CF4 -> CF4^+
+ 1.590000e+1
+SPECIES: e / CF4
+PROCESS: E + CF4 -> E + E + CF4+, Ionization
+PARAM.:  E = 15.9 eV, complete set
+COMMENT: Ionisation Total.
+UPDATED: 2010-03-13 12:23:10
+COLUMNS: Energy (eV) | Cross section (m2)
+-----------------------------
+ 1.590000e+1	0.000000e+0
+ 1.600000e+1	1.100000e-22
+ 1.700000e+1	3.800000e-22
+ 1.800000e+1	8.400000e-22
+ 1.900000e+1	1.590000e-21
+ 2.000000e+1	2.840000e-21
+ 2.500000e+1	1.030000e-20
+ 3.000000e+1	1.803000e-20
+ 3.500000e+1	2.463000e-20
+ 4.000000e+1	2.957000e-20
+ 4.500000e+1	3.483000e-20
+ 5.000000e+1	3.974000e-20
+ 5.500000e+1	4.299000e-20
+ 6.000000e+1	4.592000e-20
+ 6.500000e+1	4.811000e-20
+ 7.000000e+1	5.001000e-20
+ 7.500000e+1	5.114000e-20
+ 8.000000e+1	5.260000e-20
+ 8.500000e+1	5.342000e-20
+ 9.000000e+1	5.430000e-20
+ 9.500000e+1	5.518000e-20
+ 1.000000e+2	5.585000e-20
+ 1.100000e+2	5.690000e-20
+ 1.200000e+2	5.736000e-20
+ 1.300000e+2	5.733000e-20
+ 1.400000e+2	5.705000e-20
+ 1.500000e+2	5.681000e-20
+ 1.600000e+2	5.629000e-20
+ 1.700000e+2	5.578000e-20
+ 1.800000e+2	5.521000e-20
+ 1.900000e+2	5.470000e-20
+ 2.000000e+2	5.428000e-20
+ 2.500000e+2	5.116000e-20
+ 3.000000e+2	4.686000e-20
+ 3.500000e+2	4.610000e-20
+ 4.000000e+2	4.370000e-20
+ 4.500000e+2	4.162000e-20
+ 5.000000e+2	3.942000e-20
+-----------------------------
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
