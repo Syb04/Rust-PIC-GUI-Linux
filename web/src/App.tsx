@@ -123,6 +123,9 @@ export default function App() {
           appendLog(p.stopped ? ">> 停止しました" : `>> 完了 (終了コード ${p.code})`);
           setVizKey((v) => v + 1);
         },
+        undefined,
+        // サーバーは接続ごとに全ログを再送するため、(再)接続時に表示をリセットして重複を防ぐ
+        () => setLog([`>> ジョブ投入: ${jobId}`]),
       );
     } catch (e) {
       setRunning(false);

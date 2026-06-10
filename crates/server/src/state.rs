@@ -6,7 +6,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
-use tokio::sync::{broadcast, Mutex, Notify, Semaphore};
+use tokio::sync::{broadcast, watch, Mutex, Semaphore};
 use uuid::Uuid;
 
 use crate::params::SimParams;
@@ -107,13 +107,14 @@ pub struct Job {
     /// 実行中の子プロセス（停止時に kill する）
     pub child: Mutex<Option<tokio::process::Child>>,
     pub workdir: PathBuf,
-    /// ジョブ完了通知（SSE ストリーム終了のトリガー）
-    pub done: Arc<Notify>,
+    /// ジョブ完了通知（false→true。watch のため購読タイミングによらず取りこぼさない）
+    pub done: watch::Sender<bool>,
 }
 
 impl Job {
     pub fn new(id: Uuid, meta: JobMeta, workdir: PathBuf) -> Self {
         let (log_tx, _) = broadcast::channel(64);
+        let (done, _) = watch::channel(false);
         Self {
             id,
             meta,
@@ -122,7 +123,7 @@ impl Job {
             log_buf: Mutex::new(Vec::new()),
             child: Mutex::new(None),
             workdir,
-            done: Arc::new(Notify::new()),
+            done,
         }
     }
 }

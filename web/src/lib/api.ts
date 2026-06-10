@@ -61,16 +61,23 @@ export interface LogSubscription {
 
 /**
  * SSE でジョブログを購読する。
- * - log イベント: 1 行ずつ onLog へ。空行は無視する（finished 移行時の空イベント対策）。
+ * - log イベント: 1 行ずつ onLog へ。空行は無視する（後方互換のための防御）。
  * - finished イベント: onFinished を呼び、自動的に接続を閉じる。
+ * - onOpen: 接続確立ごとに呼ばれる。サーバーは接続ごとに全ログを再送するため、
+ *   再接続時のログ重複を防ぐには onOpen で表示をリセットすること。
  */
 export function subscribeLogs(
   id: string,
   onLog: (line: string) => void,
   onFinished: (p: FinishedPayload) => void,
   onError?: () => void,
+  onOpen?: () => void,
 ): LogSubscription {
   const es = new EventSource(`${BASE}/api/jobs/${id}/logs`);
+
+  es.onopen = () => {
+    onOpen?.();
+  };
 
   es.addEventListener("log", (e) => {
     const line = (e as MessageEvent).data as string;

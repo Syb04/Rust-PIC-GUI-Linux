@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast::error::RecvError;
 use uuid::Uuid;
 
-use crate::jobs::{create_job, stop_job, CUSTOM_WAVEFORM_DATA_REQUIRED};
+use crate::jobs::{create_job, stop_job, CUSTOM_WAVEFORM_DATA_REQUIRED, LXCAT_PATH_INVALID};
 use crate::params::SimParams;
 use crate::state::{AppState, Job, JobMeta, JobStatus};
 
@@ -71,7 +71,8 @@ async fn create_job_handler(
         .await
         .map_err(|e| {
             let message = e.to_string();
-            let status = if message == CUSTOM_WAVEFORM_DATA_REQUIRED {
+            let status = if message == CUSTOM_WAVEFORM_DATA_REQUIRED || message == LXCAT_PATH_INVALID
+            {
                 StatusCode::BAD_REQUEST
             } else {
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -87,10 +88,15 @@ async fn create_job_handler(
 
 /// GET /api/jobs — 全ジョブ一覧を created_at 降順で返す
 async fn list_jobs_handler(State(state): State<AppState>) -> impl IntoResponse {
-    let mut jobs: Vec<JobSummary> = Vec::new();
+    // DashMap のガードを await 跨ぎで保持しないよう、先にスナップショットを取る
+    let snapshot: Vec<Arc<Job>> = state
+        .jobs
+        .iter()
+        .map(|entry| Arc::clone(entry.value()))
+        .collect();
 
-    for entry in state.jobs.iter() {
-        let job = Arc::clone(entry.value());
+    let mut jobs: Vec<JobSummary> = Vec::new();
+    for job in snapshot {
         let status = job.status.lock().await.clone();
         jobs.push(JobSummary {
             meta: job.meta.clone(),
@@ -213,6 +219,10 @@ async fn logs_handler(
         (lines, rx)
     };
 
+    // 終了通知をステータス確認より先に購読する。
+    // （done は status 確定後に送られるため、この順序なら取りこぼしがない）
+    let done_rx = job.done.subscribe();
+
     // 現在のステータスを確認する
     let current_status = job.status.lock().await.clone();
     let is_terminal = matches!(
@@ -220,12 +230,20 @@ async fn logs_handler(
         JobStatus::Done { .. } | JobStatus::Failed { .. } | JobStatus::Stopped
     );
 
-    let done = Arc::clone(&job.done);
     let job_arc = Arc::clone(&job);
 
-    let stream = make_log_stream(past_lines, rx, is_terminal, current_status, done, job_arc);
+    let stream = make_log_stream(past_lines, rx, is_terminal, current_status, done_rx, job_arc);
 
     Ok(Sse::new(stream).keep_alive(KeepAlive::default()))
+}
+
+/// 最終ステータスを読んで finished イベントを生成する
+async fn finished_event(job: &Job) -> Event {
+    let status = job.status.lock().await.clone();
+    let payload = FinishedPayload::from_status(&status);
+    let json = serde_json::to_string(&payload)
+        .unwrap_or_else(|_| String::from("{\"code\":-2,\"stopped\":false}"));
+    Event::default().event("finished").data(json)
 }
 
 /// ログ SSE ストリームを生成する
@@ -234,7 +252,7 @@ fn make_log_stream(
     rx: tokio::sync::broadcast::Receiver<String>,
     is_terminal: bool,
     terminal_status: JobStatus,
-    done: Arc<tokio::sync::Notify>,
+    done_rx: tokio::sync::watch::Receiver<bool>,
     job: Arc<Job>,
 ) -> impl Stream<Item = Result<Event, Infallible>> {
     // 過去ログのリプレイストリーム
@@ -255,67 +273,57 @@ fn make_log_stream(
         return replay.chain(finished).left_stream();
     }
 
-    // 実行中ジョブ: リプレイ後にライブ受信し、終了後に finished を送る
+    // 実行中ジョブ: リプレイ後にライブ受信し、終了検知で finished を送る。
+    // 終了通知は watch チャンネルなので、バックログ処理中に発火しても消失しない。
+    // biased で recv を先に poll するため、残りのログを送り切ってから finished に移る。
     enum SsePhase {
         Live {
             rx: tokio::sync::broadcast::Receiver<String>,
-            done: Arc<tokio::sync::Notify>,
-            job: Arc<Job>,
-        },
-        Finished {
+            done_rx: tokio::sync::watch::Receiver<bool>,
             job: Arc<Job>,
         },
         End,
     }
 
-    let live_and_finished = stream::unfold(SsePhase::Live { rx, done, job }, |phase| async move {
-        match phase {
-            SsePhase::Live { mut rx, done, job } => {
-                tokio::select! {
-                    biased;
-                    result = rx.recv() => {
-                        match result {
-                            Ok(line) => Some((
-                                Ok(Event::default().event("log").data(line)),
-                                SsePhase::Live { rx, done, job },
-                            )),
-                            Err(RecvError::Lagged(n)) => {
-                                let msg = format!("{n} 行のログを取りこぼしました");
-                                Some((
-                                    Ok(Event::default().event("log").data(msg)),
-                                    SsePhase::Live { rx, done, job },
-                                ))
-                            }
-                            Err(RecvError::Closed) => {
-                                Some((
-                                    Ok(Event::default().event("log").data(String::new())),
-                                    SsePhase::Finished { job },
-                                ))
+    let live_and_finished = stream::unfold(
+        SsePhase::Live { rx, done_rx, job },
+        |phase| async move {
+            match phase {
+                SsePhase::Live {
+                    mut rx,
+                    mut done_rx,
+                    job,
+                } => {
+                    tokio::select! {
+                        biased;
+                        result = rx.recv() => {
+                            match result {
+                                Ok(line) => Some((
+                                    Ok(Event::default().event("log").data(line)),
+                                    SsePhase::Live { rx, done_rx, job },
+                                )),
+                                Err(RecvError::Lagged(n)) => {
+                                    let msg = format!("{n} 行のログを取りこぼしました");
+                                    Some((
+                                        Ok(Event::default().event("log").data(msg)),
+                                        SsePhase::Live { rx, done_rx, job },
+                                    ))
+                                }
+                                Err(RecvError::Closed) => {
+                                    Some((Ok(finished_event(&job).await), SsePhase::End))
+                                }
                             }
                         }
-                    }
-                    _ = done.notified() => {
-                        Some((
-                            Ok(Event::default().event("log").data(String::new())),
-                            SsePhase::Finished { job },
-                        ))
+                        // changed の Err（送信側 drop = ジョブ削除）も終了として扱う
+                        _ = done_rx.changed() => {
+                            Some((Ok(finished_event(&job).await), SsePhase::End))
+                        }
                     }
                 }
+                SsePhase::End => None,
             }
-            SsePhase::Finished { job } => {
-                // 最終ステータスを読んで finished イベントを1回送る
-                let status = job.status.lock().await.clone();
-                let payload = FinishedPayload::from_status(&status);
-                let json = serde_json::to_string(&payload)
-                    .unwrap_or_else(|_| String::from("{\"code\":-2,\"stopped\":false}"));
-                Some((
-                    Ok(Event::default().event("finished").data(json)),
-                    SsePhase::End,
-                ))
-            }
-            SsePhase::End => None,
-        }
-    });
+        },
+    );
 
     replay.chain(live_and_finished).right_stream()
 }

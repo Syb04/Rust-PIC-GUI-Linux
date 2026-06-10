@@ -1,6 +1,5 @@
 //! ジョブの生成・実行・停止ロジック
 
-use std::os::unix::process::CommandExt as _;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -14,6 +13,7 @@ use crate::params::{build_args, SimParams};
 use crate::state::{AppState, Job, JobMeta, JobStatus};
 
 pub const CUSTOM_WAVEFORM_DATA_REQUIRED: &str = "custom mode requires waveform data";
+pub const LXCAT_PATH_INVALID: &str = "invalid lxcat file name";
 
 /// ログ行を broadcast チャンネルに送り、バッファにも保持する（上限 2000 行）
 async fn push_log(job: &Arc<Job>, line: String) {
@@ -137,7 +137,7 @@ async fn execute_job(
                 message: format!("セマフォ取得失敗: {e}"),
             };
             // 失敗時も完了通知を送る
-            job.done.notify_waiters();
+            job.done.send_replace(true);
             return;
         }
     };
@@ -169,11 +169,17 @@ async fn execute_job(
 
     match result {
         Ok(-1) => {
+            // -1 は「stop_job が子プロセスを取り上げた」か「シグナル死（OOM 等）」。
+            // ユーザー停止なら stop_job が既に Stopped を設定している。
             let mut status = job.status.lock().await;
-            if !matches!(*status, JobStatus::Stopped) {
-                *status = JobStatus::Stopped;
+            if matches!(*status, JobStatus::Stopped) {
+                info!(job_id = %job.id, "ジョブ停止");
+            } else {
+                warn!(job_id = %job.id, "プロセスが異常終了しました（シグナル等）");
+                *status = JobStatus::Failed {
+                    message: "プロセスが異常終了しました（シグナル・OOM 等の可能性）".to_string(),
+                };
             }
-            info!(job_id = %job.id, "ジョブ停止");
         }
         Ok(code) => {
             *job.status.lock().await = JobStatus::Done { code };
@@ -187,7 +193,7 @@ async fn execute_job(
     }
 
     // ステータス確定後に SSE 購読者へ終了を通知する
-    job.done.notify_waiters();
+    job.done.send_replace(true);
 }
 
 /// ジョブを生成してレジストリに登録し、バックグラウンドで実行を開始する。
@@ -199,6 +205,12 @@ pub async fn create_job(
     threads: Option<usize>,
 ) -> anyhow::Result<Arc<Job>> {
     // workdir 作成前に検証し、不正リクエストで空ディレクトリが残らないようにする
+    if let Some(name) = params.lxcat_path.as_deref() {
+        if !name.is_empty() && (name.contains("..") || name.contains('/') || name.contains('\\')) {
+            anyhow::bail!(LXCAT_PATH_INVALID);
+        }
+    }
+
     let waveform_csv = if params.voltage_mode == "custom" {
         let waveform_data = params
             .custom_waveform_data
@@ -228,6 +240,8 @@ pub async fn create_job(
             .await
             .map_err(|e| anyhow::anyhow!("waveform.csv 書き込み失敗: {e}"))?;
         params.waveform_file_path = Some(waveform_file.to_string());
+        // 実体は waveform.csv に永続化済み。meta.json と一覧 API を肥大化させない
+        params.custom_waveform_data = None;
     }
 
     let meta = JobMeta::new(id, label, params);
@@ -306,9 +320,8 @@ pub async fn restore_jobs(state: &AppState) -> anyhow::Result<()> {
         };
 
         let (log_tx, _) = tokio::sync::broadcast::channel(64);
-        let done = Arc::new(tokio::sync::Notify::new());
-        // 完了済み扱いにするため即座に通知しておく
-        done.notify_waiters();
+        // 復元ジョブは終了済みなので done=true で作成する
+        let (done, _) = tokio::sync::watch::channel(true);
 
         let job = Arc::new(crate::state::Job {
             id,
@@ -329,7 +342,7 @@ pub async fn restore_jobs(state: &AppState) -> anyhow::Result<()> {
 }
 
 /// registry のジョブ数が max_jobs を超えていたら、古い完了済みジョブを削除する。
-/// Running 状態のジョブは削除対象外。
+/// Running / Queued（実行待ち）状態のジョブは削除対象外。
 pub async fn cleanup_jobs(state: &AppState) {
     let max_jobs = state.config.max_jobs;
     if state.jobs.len() <= max_jobs {
@@ -342,13 +355,13 @@ pub async fn cleanup_jobs(state: &AppState) {
         .iter()
         .filter_map(|entry| {
             let job = entry.value().clone();
-            // Running は非同期ロックが必要なため try_lock で判定
-            let is_running = job
+            // Running/Queued は非同期ロックが必要なため try_lock で判定
+            let is_active = job
                 .status
                 .try_lock()
-                .map(|s| matches!(*s, JobStatus::Running))
+                .map(|s| matches!(*s, JobStatus::Running | JobStatus::Queued))
                 .unwrap_or(true); // ロック取得失敗 = 実行中とみなす
-            if is_running {
+            if is_active {
                 None
             } else {
                 Some((job.meta.created_at.clone(), job.id))
