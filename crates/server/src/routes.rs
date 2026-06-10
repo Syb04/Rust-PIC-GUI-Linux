@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 use tokio::sync::broadcast::error::RecvError;
 use uuid::Uuid;
 
-use crate::jobs::{create_job, stop_job};
+use crate::jobs::{create_job, stop_job, CUSTOM_WAVEFORM_DATA_REQUIRED};
 use crate::params::SimParams;
 use crate::state::{AppState, Job, JobMeta, JobStatus};
 
@@ -69,7 +69,15 @@ async fn create_job_handler(
 ) -> Result<impl IntoResponse, (StatusCode, String)> {
     let job = create_job(state, req.params, req.mode, req.label, req.threads)
         .await
-        .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+        .map_err(|e| {
+            let message = e.to_string();
+            let status = if message == CUSTOM_WAVEFORM_DATA_REQUIRED {
+                StatusCode::BAD_REQUEST
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            };
+            (status, message)
+        })?;
 
     Ok((
         StatusCode::CREATED,

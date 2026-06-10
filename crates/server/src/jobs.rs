@@ -13,6 +13,8 @@ use uuid::Uuid;
 use crate::params::{build_args, SimParams};
 use crate::state::{AppState, Job, JobMeta, JobStatus};
 
+pub const CUSTOM_WAVEFORM_DATA_REQUIRED: &str = "custom mode requires waveform data";
+
 /// ログ行を broadcast チャンネルに送り、バッファにも保持する（上限 2000 行）
 async fn push_log(job: &Arc<Job>, line: String) {
     let _ = job.log_tx.send(line.clone());
@@ -191,17 +193,42 @@ async fn execute_job(
 /// ジョブを生成してレジストリに登録し、バックグラウンドで実行を開始する。
 pub async fn create_job(
     state: AppState,
-    params: SimParams,
+    mut params: SimParams,
     mode: String,
     label: Option<String>,
     threads: Option<usize>,
 ) -> anyhow::Result<Arc<Job>> {
+    // workdir 作成前に検証し、不正リクエストで空ディレクトリが残らないようにする
+    let waveform_csv = if params.voltage_mode == "custom" {
+        let waveform_data = params
+            .custom_waveform_data
+            .as_ref()
+            .filter(|data| !data.is_empty())
+            .ok_or_else(|| anyhow::anyhow!(CUSTOM_WAVEFORM_DATA_REQUIRED))?;
+
+        let mut csv = String::new();
+        for (time, voltage) in waveform_data {
+            csv.push_str(&format!("{},{}\n", time, voltage));
+        }
+        Some(csv)
+    } else {
+        None
+    };
+
     let id = Uuid::new_v4();
     let workdir = state.config.workspaces_dir.join(id.to_string());
 
     tokio::fs::create_dir_all(&workdir)
         .await
         .map_err(|e| anyhow::anyhow!("作業ディレクトリ作成失敗 ({}): {e}", workdir.display()))?;
+
+    if let Some(csv) = waveform_csv {
+        let waveform_file = "waveform.csv";
+        tokio::fs::write(workdir.join(waveform_file), csv)
+            .await
+            .map_err(|e| anyhow::anyhow!("waveform.csv 書き込み失敗: {e}"))?;
+        params.waveform_file_path = Some(waveform_file.to_string());
+    }
 
     let meta = JobMeta::new(id, label, params);
     let meta_json = serde_json::to_string_pretty(&meta)
