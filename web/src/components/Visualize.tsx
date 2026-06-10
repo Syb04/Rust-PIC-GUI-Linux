@@ -4,6 +4,7 @@ import { DIAGNOSTIC_CATEGORIES, DIAG_BY_FILE } from "../diagnostics";
 import { api } from "../lib/api";
 import { LINE_PALETTES, HEATMAP_SCALES, type PlotOptions } from "../lib/plot";
 import type { Diagnostic } from "../types";
+import { ParticleAnim } from "./ParticleAnim";
 import { Plot } from "./Plot";
 
 interface Props {
@@ -69,6 +70,7 @@ export function Visualize({ jobId, refreshKey }: Props) {
     !!diag &&
     ((spec.type === "line" && diag.kind === "columns") ||
       (spec.type === "heatmap" && diag.kind === "matrix"));
+  const animReady = !!spec && !!diag && spec.type === "anim" && diag.kind === "anim";
 
   const opts: PlotOptions = useMemo(
     () => ({
@@ -175,6 +177,7 @@ export function Visualize({ jobId, refreshKey }: Props) {
           {!spec && <div className="empty-state"><div className="msg">診断を選択してください</div></div>}
           {spec && !diag && <div className="empty-state"><div className="msg">読み込み中…</div></div>}
           {spec && diag && diag.kind === "text" && <pre className="report-text">{diag.text}</pre>}
+          {animReady && diag.kind === "anim" && <ParticleAnim anim={diag.anim} />}
           {plotReady && <Plot spec={spec!} data={diag!} opts={opts} />}
         </div>
       </motion.section>

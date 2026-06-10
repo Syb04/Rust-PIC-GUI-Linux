@@ -4,6 +4,7 @@
 use std::path::Path;
 
 use serde::Serialize;
+use serde_json::Value;
 
 /// 空白区切りの数値テーブルを行ごとに読む。
 /// '#' で始まる行はスキップ、空行もスキップ。
@@ -39,6 +40,8 @@ pub enum Diagnostic {
     Matrix { matrix: Vec<Vec<f64>> },
     /// テキストレポート
     Text { text: String },
+    /// Particle animation payload from anim.json.
+    Anim { anim: Value },
 }
 
 /// workdir/result/1d/<name> を読み、種別に応じてパースして返す。
@@ -51,6 +54,14 @@ pub fn read_diagnostic(workdir: &Path, name: &str) -> Result<Diagnostic, String>
     if name == "info.txt" {
         let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
         return Ok(Diagnostic::Text { text });
+    }
+
+    if name == "anim.json" {
+        let text = std::fs::read_to_string(&path)
+            .map_err(|e| format!("anim.json read failed ({}): {e}", path.display()))?;
+        let anim = serde_json::from_str::<Value>(&text)
+            .map_err(|e| format!("anim.json parse failed ({}): {e}", path.display()))?;
+        return Ok(Diagnostic::Anim { anim });
     }
 
     let rows = read_columns(&path)?;

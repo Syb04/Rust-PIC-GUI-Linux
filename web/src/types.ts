@@ -50,7 +50,22 @@ export type RunMode = "init" | "run" | "measure" | "init_measure";
 export type Diagnostic =
   | { kind: "columns"; columns: number[][]; labels?: string[] | null }
   | { kind: "matrix"; matrix: number[][] }
-  | { kind: "text"; text: string };
+  | { kind: "text"; text: string }
+  | { kind: "anim"; anim: AnimData };
+
+export interface AnimFrame {
+  t: number;
+  ex: number[];
+  evx: number[];
+  ix: number[];
+  ivx: number[];
+}
+
+export interface AnimData {
+  gapM: number;
+  framesPerCycle: number;
+  frames: AnimFrame[];
+}
 
 export interface FinishedPayload {
   code: number;

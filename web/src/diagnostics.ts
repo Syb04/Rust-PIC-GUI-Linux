@@ -8,7 +8,7 @@ export interface LineTrace {
 export interface DiagSpec {
   file: string;
   title: string;
-  type: "line" | "heatmap" | "text";
+  type: "line" | "heatmap" | "text" | "anim";
   xLabel?: string;
   yLabel?: string;
   xCol?: number; // line: x 軸の列番号
@@ -156,6 +156,10 @@ export const DIAGNOSTIC_CATEGORIES: DiagCategory[] = [
       { file: "meanee_xt.dat", title: "電子平均エネルギー (x,t)", type: "heatmap", colorscale: "Viridis" },
       { file: "meanei_xt.dat", title: "イオン平均エネルギー (x,t)", type: "heatmap", colorscale: "Viridis" },
     ],
+  },
+  {
+    title: "粒子アニメーション",
+    items: [{ file: "anim.json", title: "超粒子位相空間 (x-vx)", type: "anim" }],
   },
   {
     title: "レポート",

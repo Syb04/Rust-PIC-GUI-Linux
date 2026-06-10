@@ -5,6 +5,9 @@ crates/*/target
 # Node / フロント
 **/node_modules
 /web/dist
+*.tsbuildinfo
+/web/vite.config.js
+/web/vite.config.d.ts
 
 # 実行時生成物
 workspaces/

@@ -72,6 +72,7 @@ async fn run_step(
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::piped())
         .kill_on_drop(true);
+    #[cfg(unix)]
     cmd.process_group(0);
 
     if let Some(t) = threads {

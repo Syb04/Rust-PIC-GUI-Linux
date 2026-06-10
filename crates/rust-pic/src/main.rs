@@ -96,6 +96,23 @@ struct ParticleType {
     vz: f64,
 }
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AnimData {
+    gap_m: f64,
+    frames_per_cycle: usize,
+    frames: Vec<AnimFrame>,
+}
+
+#[derive(serde::Serialize)]
+struct AnimFrame {
+    t: f64,
+    ex: Vec<f64>,
+    evx: Vec<f64>,
+    ix: Vec<f64>,
+    ivx: Vec<f64>,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum OneDVoltageMode {
     Rf,        // V_dc + V_amp * cos(φ)
@@ -578,6 +595,35 @@ fn ensure_output_dir(dir: &str) {
 
 fn output_path(dir: &str, filename: &str) -> String {
     Path::new(dir).join(filename).to_string_lossy().into_owned()
+}
+
+fn sample_anim_particles(particles: &[ParticleType]) -> (Vec<f64>, Vec<f64>) {
+    let stride = (particles.len() / 1000).max(1);
+    let sample_len = ((particles.len() + stride - 1) / stride).min(1000);
+    let mut x = Vec::with_capacity(sample_len);
+    let mut vx = Vec::with_capacity(sample_len);
+    for part in particles.iter().step_by(stride).take(1000) {
+        x.push(part.x);
+        vx.push(part.vx);
+    }
+    (x, vx)
+}
+
+fn sample_anim_frame(
+    t_step: usize,
+    steps_per_period: usize,
+    electrons: &[ParticleType],
+    ions: &[ParticleType],
+) -> AnimFrame {
+    let (ex, evx) = sample_anim_particles(electrons);
+    let (ix, ivx) = sample_anim_particles(ions);
+    AnimFrame {
+        t: (t_step as f64) / (steps_per_period as f64),
+        ex,
+        evx,
+        ix,
+        ivx,
+    }
 }
 
 fn print_usage() {
@@ -1256,6 +1302,14 @@ fn main() {
     let mut counter_e_xt: Vec<Vec<f64>> = vec![vec![0.0; n_grid]; n_xt]; // XT counter for electron properties
     let mut counter_i_xt: Vec<Vec<f64>> = vec![vec![0.0; n_grid]; n_xt]; // XT counter for ion properties
     let mut ioniz_rate_xt: Vec<Vec<f64>> = vec![vec![0.0; n_grid]; n_xt]; // XT distribution of the ionisation rate
+    let anim_frame_stride = (sim_config.steps_per_period / 200).max(1);
+    let mut anim_frames = if measurement {
+        let frame_capacity =
+            (sim_config.steps_per_period + anim_frame_stride - 1) / anim_frame_stride;
+        Some(Vec::with_capacity(frame_capacity))
+    } else {
+        None
+    };
 
     let mut mean_energy_accu_center: f64 = 0.0;
     let mut mean_e_energy_pow: f64 = 0.0;
@@ -1591,6 +1645,17 @@ fn main() {
                 }
 
                 if measurement {
+                    if c == cycle && t % anim_frame_stride == 0 {
+                        if let Some(frames) = anim_frames.as_mut() {
+                            frames.push(sample_anim_frame(
+                                t,
+                                sim_config.steps_per_period,
+                                &Electrons,
+                                &Ions,
+                            ));
+                        }
+                    }
+
                     let t_index: usize = sim_config.xt_index(t);
                     let mut p: usize;
                     let mut c1: f64;
@@ -1913,6 +1978,17 @@ fn main() {
         )
         .map_err(|err| println!("{:?}", err))
         .ok();
+        if let Some(frames) = anim_frames.take() {
+            println!(">> saving anim.json");
+            let anim = AnimData {
+                gap_m: sim_config.gap_m,
+                frames_per_cycle: frames.len(),
+                frames,
+            };
+            save_anim(&output_path(RESULT_1D_DIR, "anim.json"), &anim)
+                .map_err(|err| println!(">> Rust-PIC: ERROR = failed to save anim.json: {:?}", err))
+                .ok();
+        }
     }
     println!(
         ">> Rust-PIC: Simulation of {} cycle(s) is completed lasting {:.3} sec.",
@@ -2565,6 +2641,12 @@ fn save_particle_data(
     bincode::serialize_into(&mut file, &Ions).expect("unable to write to file");
     bincode::serialize_into(&mut file, &NegativeIons).expect("unable to write to file");
     Ok(())
+}
+
+fn save_anim(filename: &str, anim: &AnimData) -> std::io::Result<()> {
+    let file = File::create(filename)?;
+    serde_json::to_writer(file, anim)
+        .map_err(|err| std::io::Error::new(std::io::ErrorKind::Other, err))
 }
 
 fn load_particle_data(

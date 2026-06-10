@@ -1,6 +1,8 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
+declare const process: { env: Record<string, string | undefined> };
+
 // 開発サーバーは API を Axum バックエンドへプロキシする。
 // 既定ポートは 8090（バックエンドの BIND_ADDR 既定と揃える）。
 const API_TARGET = process.env.VITE_API_TARGET ?? "http://127.0.0.1:8090";
