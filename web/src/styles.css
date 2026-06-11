@@ -40,10 +40,49 @@
   --font-display: "Chakra Petch", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --font-body: "IBM Plex Sans", system-ui, sans-serif;
+
+  --focus-ring: 0 0 0 2px var(--bg-deep), 0 0 0 4px rgba(54, 224, 214, 0.55);
+
+  accent-color: var(--electron);
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* フォーカスリングの統一（キーボード操作時のみ） */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+::selection {
+  background: rgba(54, 224, 214, 0.28);
+  color: var(--text);
+}
+
+/* スクロールバーの統一 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-faint);
+  background-clip: padding-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(86, 104, 135, 0.4) transparent;
 }
 
 html,
@@ -147,17 +186,26 @@ body {
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: color 0.18s ease;
   position: relative;
 }
 .tabs button:hover {
   color: var(--text);
-  background: var(--elev);
 }
 .tabs button.active {
   color: var(--electron);
+}
+.tabs .tab-label {
+  position: relative;
+  z-index: 1;
+}
+/* アクティブタブの背面をスライドするピル (framer-motion layoutId) */
+.tabs .tab-indicator {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-sm);
   background: rgba(54, 224, 214, 0.08);
-  border-color: rgba(54, 224, 214, 0.35);
+  border: 1px solid rgba(54, 224, 214, 0.35);
   box-shadow: 0 0 0 1px rgba(54, 224, 214, 0.1), 0 4px 18px -8px var(--electron-glow);
 }
 
@@ -187,6 +235,10 @@ body {
 .btn:hover:not(:disabled) {
   border-color: var(--text-dim);
   transform: translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+  transition-duration: 0.06s;
 }
 .btn:disabled {
   opacity: 0.4;
@@ -346,6 +398,10 @@ body {
   transition: all 0.15s ease;
   width: 100%;
 }
+.field input:hover:not(:focus),
+.field select:hover:not(:focus) {
+  border-color: var(--border-strong);
+}
 .field input:focus,
 .field select:focus {
   outline: none;
@@ -480,6 +536,35 @@ body {
   white-space: pre-wrap;
   word-break: break-word;
   color: var(--text-dim);
+  animation: console-line-in 0.18s ease-out;
+}
+@keyframes console-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* 実行中の点滅カーソル */
+.console-cursor {
+  display: inline-block;
+  width: 8px;
+  height: 15px;
+  margin-top: 2px;
+  background: var(--electron);
+  box-shadow: 0 0 8px var(--electron-glow);
+  animation: cursor-blink 1.1s steps(2, jump-none) infinite;
+}
+@keyframes cursor-blink {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 .console-line.sys {
   color: var(--electron);
@@ -594,6 +679,7 @@ body {
   padding: 4px 8px;
 }
 .diag-item {
+  position: relative;
   display: block;
   width: 100%;
   text-align: left;
@@ -614,6 +700,17 @@ body {
   color: var(--electron);
   background: rgba(54, 224, 214, 0.08);
   border-color: rgba(54, 224, 214, 0.3);
+}
+.diag-item.active::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--electron);
+  box-shadow: 0 0 8px var(--electron-glow);
 }
 .diag-item:disabled {
   opacity: 0.3;
@@ -659,6 +756,31 @@ body {
   flex: 1;
   min-width: 140px;
   accent-color: var(--electron);
+  appearance: none;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border-strong);
+  cursor: pointer;
+}
+.particle-anim-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--electron);
+  box-shadow: 0 0 10px var(--electron-glow);
+  transition: transform 0.12s ease;
+}
+.particle-anim-slider input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+.particle-anim-slider input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--electron);
+  box-shadow: 0 0 10px var(--electron-glow);
 }
 .particle-anim-slider span,
 .particle-anim-time {
@@ -760,6 +882,8 @@ body {
 }
 .job-card:hover {
   border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px -16px rgba(0, 0, 0, 0.8);
 }
 .job-card.selected {
   border-color: var(--electron);
@@ -872,4 +996,17 @@ body {
 .heatmap-cell .plot-host {
   height: 320px;
   min-height: 320px;
+}
+
+/* ============================================================
+   モーション低減設定への配慮
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

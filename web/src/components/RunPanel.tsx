@@ -92,6 +92,7 @@ export function RunPanel({ form, status, running, log, onStop }: Props) {
               );
             })
           )}
+          {running && <span className="console-cursor" aria-hidden="true" />}
         </div>
       </section>
     </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ParamForm } from "./components/ParamForm";
 import { RunPanel } from "./components/RunPanel";
 import { Visualize } from "./components/Visualize";
@@ -13,6 +14,13 @@ const MAX_LOG = 2000;
 
 type Tab = "params" | "run" | "jobs" | "visualize";
 type ViewMode = "single" | "compare";
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "params", label: "計算条件" },
+  { id: "run", label: "実行" },
+  { id: "jobs", label: "ジョブ" },
+  { id: "visualize", label: "可視化" },
+];
 
 function loadForm(): FormValues {
   try {
@@ -203,18 +211,22 @@ export default function App() {
           <span className="sub">Plasma Simulation Console</span>
         </div>
         <nav className="tabs">
-          <button className={tab === "params" ? "active" : ""} onClick={() => setTab("params")}>
-            計算条件
-          </button>
-          <button className={tab === "run" ? "active" : ""} onClick={() => setTab("run")}>
-            実行
-          </button>
-          <button className={tab === "jobs" ? "active" : ""} onClick={() => setTab("jobs")}>
-            ジョブ
-          </button>
-          <button className={tab === "visualize" ? "active" : ""} onClick={() => setTab("visualize")}>
-            可視化
-          </button>
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              className={tab === t.id ? "active" : ""}
+              onClick={() => setTab(t.id)}
+            >
+              {tab === t.id && (
+                <motion.span
+                  className="tab-indicator"
+                  layoutId="tab-indicator"
+                  transition={{ type: "spring", stiffness: 500, damping: 38 }}
+                />
+              )}
+              <span className="tab-label">{t.label}</span>
+            </button>
+          ))}
         </nav>
         <div className="header-actions">
           {tab === "params" && (
@@ -233,37 +245,47 @@ export default function App() {
           <div className="notice error">{error}</div>
         )}
 
-        {tab === "params" && (
-          <ParamForm
-            form={form}
-            onChange={onChange}
-            disabled={running}
-            waveform={waveform}
-            onWaveform={handleWaveform}
-          />
-        )}
-        {tab === "run" && (
-          <RunPanel form={form} status={status} running={running} log={log} onStop={handleStop} />
-        )}
-        {tab === "jobs" && (
-          <JobsList
-            jobs={jobs}
-            selectedIds={selectedIds}
-            loading={jobsLoading}
-            onToggleSelect={toggleSelect}
-            onView={viewJob}
-            onStop={stopJob}
-            onDelete={deleteJob}
-            onCompare={startCompare}
-            onRefresh={fetchJobs}
-          />
-        )}
-        {tab === "visualize" &&
-          (viewMode === "compare" && compareJobs.length >= 2 ? (
-            <Compare jobs={compareJobs} />
-          ) : (
-            <Visualize jobId={activeJobId} refreshKey={vizKey} />
-          ))}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+          >
+            {tab === "params" && (
+              <ParamForm
+                form={form}
+                onChange={onChange}
+                disabled={running}
+                waveform={waveform}
+                onWaveform={handleWaveform}
+              />
+            )}
+            {tab === "run" && (
+              <RunPanel form={form} status={status} running={running} log={log} onStop={handleStop} />
+            )}
+            {tab === "jobs" && (
+              <JobsList
+                jobs={jobs}
+                selectedIds={selectedIds}
+                loading={jobsLoading}
+                onToggleSelect={toggleSelect}
+                onView={viewJob}
+                onStop={stopJob}
+                onDelete={deleteJob}
+                onCompare={startCompare}
+                onRefresh={fetchJobs}
+              />
+            )}
+            {tab === "visualize" &&
+              (viewMode === "compare" && compareJobs.length >= 2 ? (
+                <Compare jobs={compareJobs} />
+              ) : (
+                <Visualize jobId={activeJobId} refreshKey={vizKey} />
+              ))}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );
